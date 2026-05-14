@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DynaStruc Builder — Constructor MGDL 3D</title>
+<title>ReiDyn Builder — Constructor MGDL 3D</title>
 <link rel="stylesheet" href="style.css">
 
 <!-- Three.js para vista 3D -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 
-<!-- QR code generator -->
+<!-- QR code (alternativa confiable, sin dependencia de canvas externo) -->
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 
 <!-- LZString para comprimir el JSON -->
@@ -19,9 +19,9 @@
 <body>
 
 <header>
-  <h1>DynaStruc AR</h1>
+  <h1>ReiDyn AR</h1>
   <p class="subtitle">Constructor de estructuras MGDL 3D</p>
-  <p class="author">RiSK — Universidad del Valle · Reider Muñoz</p>
+  <p class="author">RiSK — Universidad del Valle · Andrés Muñoz</p>
 </header>
 
 <main>
@@ -82,11 +82,11 @@
     <h2>3. Modo de edición</h2>
     <div class="modos">
       <button class="modo-btn activo" data-modo="ver">Ver</button>
-      <button class="modo-btn" data-modo="borrar">Borrar elemento</button>
+      <button class="modo-btn" data-modo="borrar">Borrar</button>
       <button class="modo-btn" data-modo="apoyo">Apoyo</button>
     </div>
 
-    <h2>4. Apoyo seleccionado</h2>
+    <h2>4. Tipo de apoyo</h2>
     <div class="modos apoyos">
       <button class="apoyo-btn activo" data-apoyo="1">Empotrado</button>
       <button class="apoyo-btn" data-apoyo="2">Articulado</button>
@@ -152,7 +152,7 @@
       <span class="dot col-ap"></span> Apoyo &nbsp;
       <span class="dot col-elim"></span> Eliminado
     </p>
-    <p class="tip">Click en un elemento para alternar (en modo "Borrar"). Click+arrastrar para rotar. Scroll para zoom.</p>
+    <p class="tip">Click+arrastrar para rotar • Scroll para zoom • Click en elemento o nodo según modo</p>
   </section>
 
   <!-- ============================================ -->
@@ -167,7 +167,9 @@
       Modo QR: <span id="modo-qr" class="badge badge-A">QR Directo (offline)</span>
     </div>
 
-    <div id="qr-container"></div>
+    <div id="qr-container">
+      <div class="qr-placeholder">Presiona "Generar QR / JSON"</div>
+    </div>
 
     <h3>JSON generado</h3>
     <textarea id="jsonOut" readonly placeholder="Presiona 'Generar QR / JSON' para crear..."></textarea>
@@ -188,7 +190,7 @@
         <input type="text" id="jsonBinKey" placeholder="$2a$10$... o vacío">
       </div>
       <p class="hint">
-        Si la estructura no cabe en QR (>1.5 KB), se sube a JSONBin.io y
+        Si el JSON comprimido supera 1.5 KB, se sube a JSONBin.io y
         el QR contiene la URL corta. Sin API key se usa modo público.
       </p>
     </details>
