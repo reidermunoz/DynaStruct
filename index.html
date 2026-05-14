@@ -3,23 +3,36 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DynaStruc Builder — Constructor MGDL 3D</title>
+<title>DynaStruct Builder — Constructor MGDL 3D</title>
 <link rel="stylesheet" href="style.css">
 
 <!-- Three.js para vista 3D -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 
-<!-- QR code (alternativa confiable, sin dependencia de canvas externo) -->
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-
 <!-- LZString para comprimir el JSON -->
 <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
+
+<!-- QRious: libreria estable y ligera para generar QR (con fallback) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+<script>
+// Fallback: si QRious no cargo del primer CDN, intentamos otro
+if (typeof QRious === 'undefined') {
+  document.write('<script src="https://unpkg.com/qrious@4.0.2/dist/qrious.min.js"><\/script>');
+}
+</script>
+<script>
+// Fallback 2: si todavia no cargo, tercer CDN
+if (typeof QRious === 'undefined') {
+  document.write('<script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"><\/script>');
+}
+</script>
+
 </head>
 <body>
 
 <header>
-  <h1>DynaStruc AR</h1>
+  <h1>DynaStruct AR</h1>
   <p class="subtitle">Constructor de estructuras MGDL 3D</p>
   <p class="author">RiSK — Universidad del Valle · Reider Muñoz</p>
 </header>
@@ -82,9 +95,10 @@
     <h2>3. Modo de edición</h2>
     <div class="modos">
       <button class="modo-btn activo" data-modo="ver">Ver</button>
-      <button class="modo-btn" data-modo="borrar">Borrar</button>
-      <button class="modo-btn" data-modo="apoyo">Apoyo</button>
+      <button class="modo-btn" data-modo="editar">Editar elemento</button>
+      <button class="modo-btn" data-modo="apoyo">Cambiar apoyo</button>
     </div>
+    <p class="hint-modo" id="hintModo">Solo rotar/ver la estructura</p>
 
     <h2>4. Tipo de apoyo</h2>
     <div class="modos apoyos">
@@ -133,7 +147,7 @@
     </div>
 
     <h2>6. Acciones</h2>
-    <button class="btn-primario" id="btnRegular">Regenerar regular</button>
+    <button class="btn-primario" id="btnRegular">Regenerar estructura regular</button>
     <button class="btn-secundario" id="btnGenerar">Generar QR / JSON</button>
 
     <div id="estado" class="estado"></div>
@@ -149,10 +163,14 @@
       <span class="dot col-col"></span> Columna &nbsp;
       <span class="dot col-vx"></span> Viga X &nbsp;
       <span class="dot col-vz"></span> Viga Z &nbsp;
-      <span class="dot col-ap"></span> Apoyo &nbsp;
       <span class="dot col-elim"></span> Eliminado
     </p>
-    <p class="tip">Click+arrastrar para rotar • Scroll para zoom • Click en elemento o nodo según modo</p>
+    <p class="leyenda">
+      <span class="dot col-emp"></span> Empotrado &nbsp;
+      <span class="dot col-art"></span> Articulado &nbsp;
+      <span class="dot col-pat"></span> Patín
+    </p>
+    <p class="tip">Click+arrastrar para rotar • Scroll para zoom</p>
   </section>
 
   <!-- ============================================ -->
@@ -186,12 +204,12 @@
         <input type="checkbox" id="forzarJsonBin">
       </div>
       <div class="field">
-        <label>JSONBin API Key (opcional, para guardar)</label>
+        <label>JSONBin API Key (opcional)</label>
         <input type="text" id="jsonBinKey" placeholder="$2a$10$... o vacío">
       </div>
       <p class="hint">
         Si el JSON comprimido supera 1.5 KB, se sube a JSONBin.io y
-        el QR contiene la URL corta. Sin API key se usa modo público.
+        el QR contiene la URL corta.
       </p>
     </details>
   </section>
@@ -199,7 +217,7 @@
 </main>
 
 <footer>
-  <p>DynaStruc Builder v1.0 · Genera estructuras compatibles con DynaStruc AR</p>
+  <p>DynaStruct Builder v1.1 · Genera estructuras compatibles con DynaStruct AR</p>
 </footer>
 
 <script src="script.js"></script>
