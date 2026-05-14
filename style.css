@@ -418,3 +418,22 @@ footer {
   .panel { max-height: none; }
   #canvas-container { min-height: 400px; }
 }
+
+/* ============================================================
+   AGREGADOS v1.1 — apoyos diferenciados, hint de modo
+   ============================================================ */
+.col-emp { background: #BA7517; }
+.col-art { background: #E4A33B; }
+.col-pat { background: #E5C870; }
+
+.hint-modo {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--txt-2);
+  background: var(--bg-2);
+  padding: 8px;
+  border-radius: 5px;
+  border-left: 3px solid var(--col-primario);
+  line-height: 1.4;
+}
+
