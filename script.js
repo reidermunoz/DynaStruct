@@ -35,8 +35,8 @@ const colores = {
   vigaX: 0x378ADD,
   vigaZ: 0xAFA9EC,
   apoyo: 0xBA7517,
-  nodo: 0x666688,
-  eliminado: 0x444444
+  nodo: 0x888899,
+  eliminado: 0x3a3a40
 };
 
 function init3D() {
@@ -69,8 +69,24 @@ function init3D() {
 
   // Raycaster para click en elementos
   raycaster = new THREE.Raycaster();
+  // IMPORTANTE: aumentar threshold para que vigas finas sean fáciles de tocar
+  raycaster.params.Line.threshold = 0.2;
   mouse = new THREE.Vector2();
-  renderer.domElement.addEventListener('click', onCanvasClick);
+
+  // Detectar click vs drag (OrbitControls usa el mismo evento)
+  let mouseDownPos = null;
+  renderer.domElement.addEventListener('pointerdown', (e) => {
+    mouseDownPos = { x: e.clientX, y: e.clientY };
+  });
+  renderer.domElement.addEventListener('pointerup', (e) => {
+    if (!mouseDownPos) return;
+    const dx = e.clientX - mouseDownPos.x;
+    const dy = e.clientY - mouseDownPos.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    // Solo es "click" si no se arrastró mucho
+    if (dist < 5) onCanvasClick(e);
+    mouseDownPos = null;
+  });
 
   // Suelo de referencia
   const gridHelper = new THREE.GridHelper(30, 30, 0x222230, 0x16161c);
@@ -116,6 +132,10 @@ function redibujar() {
   const cx = (state.nx - 1) * state.sx / 2;
   const cz = (state.nz - 1) * state.sz / 2;
 
+  // Tamano de elemento adaptativo segun escala
+  const grosor = Math.max(0.06, Math.min(state.sx, state.sz) * 0.04);
+  const radioNodo = Math.max(0.12, grosor * 1.8);
+
   // ---- Columnas ----
   for (let mz = 0; mz < state.nz; mz++) {
     for (let ex = 0; ex < state.nx; ex++) {
@@ -123,7 +143,7 @@ function redibujar() {
         const eliminado = esEliminado(1, ex, ny, mz);
         const p1 = new THREE.Vector3(ex * state.sx - cx, ny * state.sy, mz * state.sz - cz);
         const p2 = new THREE.Vector3(ex * state.sx - cx, (ny + 1) * state.sy, mz * state.sz - cz);
-        crearLinea(p1, p2, eliminado ? colores.eliminado : colores.columna, 0.08,
+        crearElemento(p1, p2, eliminado ? colores.eliminado : colores.columna, grosor,
           { tipo: 1, ex, ny, mz });
       }
     }
@@ -136,7 +156,7 @@ function redibujar() {
         const eliminado = esEliminado(2, ex, ny, mz);
         const p1 = new THREE.Vector3(ex * state.sx - cx, ny * state.sy, mz * state.sz - cz);
         const p2 = new THREE.Vector3((ex + 1) * state.sx - cx, ny * state.sy, mz * state.sz - cz);
-        crearLinea(p1, p2, eliminado ? colores.eliminado : colores.vigaX, 0.08,
+        crearElemento(p1, p2, eliminado ? colores.eliminado : colores.vigaX, grosor,
           { tipo: 2, ex, ny, mz });
       }
     }
@@ -149,7 +169,7 @@ function redibujar() {
         const eliminado = esEliminado(3, ex, ny, mz);
         const p1 = new THREE.Vector3(ex * state.sx - cx, ny * state.sy, mz * state.sz - cz);
         const p2 = new THREE.Vector3(ex * state.sx - cx, ny * state.sy, (mz + 1) * state.sz - cz);
-        crearLinea(p1, p2, eliminado ? colores.eliminado : colores.vigaZ, 0.08,
+        crearElemento(p1, p2, eliminado ? colores.eliminado : colores.vigaZ, grosor,
           { tipo: 3, ex, ny, mz });
       }
     }
@@ -162,27 +182,27 @@ function redibujar() {
         const nodoId = obtenerIdNodo(ex, ny, mz);
         const p = new THREE.Vector3(ex * state.sx - cx, ny * state.sy, mz * state.sz - cz);
         let color = colores.nodo;
-        let radio = ny > 0 ? 0.15 : 0.1;
+        let r = ny > 0 ? radioNodo : radioNodo * 0.8;
         if (state.apoyos[nodoId]) {
           color = colores.apoyo;
-          radio = 0.22;
+          r = radioNodo * 1.5;
         }
-        crearNodo(p, color, radio, { tipo: 'nodo', ex, ny, mz, nodoId });
+        crearNodo(p, color, r, { tipo: 'nodo', ex, ny, mz, nodoId });
       }
     }
   }
 
-  // Recentrar camara/controles
+  // Recentrar camara
   controls.target.set(0, state.ny * state.sy * 0.5, 0);
 }
 
-function crearLinea(p1, p2, color, grosor, userData) {
-  // Cilindro entre p1 y p2 (para que sea clickeable)
+function crearElemento(p1, p2, color, grosor, userData) {
+  // Cilindro entre p1 y p2 (clickeable y visualmente claro)
   const dir = new THREE.Vector3().subVectors(p2, p1);
   const longitud = dir.length();
   const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
 
-  const geo = new THREE.CylinderGeometry(grosor, grosor, longitud, 8);
+  const geo = new THREE.CylinderGeometry(grosor, grosor, longitud, 10);
   const mat = new THREE.MeshLambertMaterial({ color });
   const cyl = new THREE.Mesh(geo, mat);
   cyl.position.copy(mid);
@@ -197,7 +217,7 @@ function crearLinea(p1, p2, color, grosor, userData) {
 }
 
 function crearNodo(pos, color, radio, userData) {
-  const geo = new THREE.SphereGeometry(radio, 12, 12);
+  const geo = new THREE.SphereGeometry(radio, 14, 14);
   const mat = new THREE.MeshLambertMaterial({ color });
   const sph = new THREE.Mesh(geo, mat);
   sph.position.copy(pos);
@@ -216,21 +236,35 @@ function onCanvasClick(event) {
   mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
   raycaster.setFromCamera(mouse, camera);
-  const hits = raycaster.intersectObjects(estructuraGroup.children);
+  const hits = raycaster.intersectObjects(estructuraGroup.children, false);
   if (hits.length === 0) return;
 
-  const obj = hits[0].object;
-  const ud = obj.userData;
+  // Priorizar nodos en modo apoyo, elementos en modo borrar
+  let target = null;
+  if (state.modo === 'apoyo') {
+    // Buscar el primer nodo de la base
+    target = hits.find(h => h.object.userData.tipo === 'nodo' && h.object.userData.ny === 0);
+  } else if (state.modo === 'borrar') {
+    // Buscar el primer elemento (no nodo)
+    target = hits.find(h => h.object.userData.tipo !== 'nodo');
+  }
+  if (!target) return;
 
-  if (state.modo === 'borrar' && ud.tipo && ud.tipo !== 'nodo') {
+  const ud = target.object.userData;
+
+  if (state.modo === 'borrar' && ud.tipo !== 'nodo') {
     toggleEliminado(ud.tipo, ud.ex, ud.ny, ud.mz);
     redibujar();
     actualizarBytes();
+    setEstado('Elemento ' + (esEliminado(ud.tipo, ud.ex, ud.ny, ud.mz) ? 'eliminado' : 'restaurado'), 'ok');
   } else if (state.modo === 'apoyo' && ud.tipo === 'nodo' && ud.ny === 0) {
     if (state.apoyos[ud.nodoId] === state.apoyoSel) {
       delete state.apoyos[ud.nodoId];
+      setEstado('Apoyo removido', 'info');
     } else {
       state.apoyos[ud.nodoId] = state.apoyoSel;
+      const nombres = { 1: 'Empotrado', 2: 'Articulado', 3: 'Patín' };
+      setEstado('Apoyo ' + nombres[state.apoyoSel] + ' asignado', 'ok');
     }
     redibujar();
     actualizarBytes();
@@ -270,6 +304,7 @@ function regenerarRegular() {
   }
   redibujar();
   actualizarBytes();
+  setEstado('Estructura regenerada', 'ok');
 }
 
 // ============================================================
@@ -314,7 +349,7 @@ function actualizarBytes() {
   document.getElementById('bytes-raw').textContent = json.length;
   document.getElementById('bytes-comp').textContent = comp.length;
 
-  const limite = 1500; // ~1.5 KB
+  const limite = 1500;
   const forzar = document.getElementById('forzarJsonBin').checked;
   const modo = (comp.length > limite || forzar) ? 'B' : 'A';
   const badge = document.getElementById('modo-qr');
@@ -328,10 +363,16 @@ function actualizarBytes() {
 }
 
 // ============================================================
-//  GENERAR QR
+//  GENERAR QR CON qrcode-generator (libreria confiable)
 // ============================================================
 async function generarQR() {
   setEstado('Generando...', 'info');
+
+  // Verificar que la libreria QR cargo bien
+  if (typeof qrcode === 'undefined') {
+    setEstado('Error: librería QR no cargada. Refresca la página.', 'error');
+    return;
+  }
 
   const jsonObj = construirJSON();
   const jsonStr = JSON.stringify(jsonObj);
@@ -354,27 +395,55 @@ async function generarQR() {
       return;
     }
   } else {
-    // Prefijo para indicar a la app que es JSON comprimido directo
     qrPayload = "RDYN:Z:" + compStr;
-    setEstado('QR generado con JSON directo.', 'ok');
+    setEstado('QR generado correctamente', 'ok');
   }
 
-  // Dibujar QR
+  dibujarQR(qrPayload);
+}
+
+function dibujarQR(payload) {
   const cont = document.getElementById('qr-container');
   cont.innerHTML = '';
-  const canv = document.createElement('canvas');
-  cont.appendChild(canv);
+
   try {
-    await QRCode.toCanvas(canv, qrPayload, {
-      width: 280,
-      margin: 2,
-      errorCorrectionLevel: 'M',
-      color: { dark: '#000000', light: '#ffffff' }
-    });
+    // qrcode-generator: usar tipo automatico segun longitud y nivel M de correccion
+    // typeNumber 0 = auto
+    const qr = qrcode(0, 'M');
+    qr.addData(payload);
+    qr.make();
+
+    // Crear un canvas para mostrarlo
+    const canvas = document.createElement('canvas');
+    const moduleCount = qr.getModuleCount();
+    const cellSize = 6;
+    const margin = 2 * cellSize;
+    const size = moduleCount * cellSize + margin * 2;
+    canvas.width = size;
+    canvas.height = size;
+    canvas.style.maxWidth = '280px';
+    canvas.style.height = 'auto';
+
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, size, size);
+    ctx.fillStyle = '#000000';
+
+    for (let r = 0; r < moduleCount; r++) {
+      for (let c = 0; c < moduleCount; c++) {
+        if (qr.isDark(r, c)) {
+          ctx.fillRect(margin + c * cellSize, margin + r * cellSize, cellSize, cellSize);
+        }
+      }
+    }
+    cont.appendChild(canvas);
   } catch (e) {
     setEstado('Error generando QR: ' + e.message, 'error');
     console.error(e);
-    return;
+    const div = document.createElement('div');
+    div.className = 'qr-placeholder';
+    div.textContent = 'Error al generar QR. Revisa la consola.';
+    cont.appendChild(div);
   }
 }
 
@@ -401,7 +470,6 @@ async function subirAJsonBin(obj) {
   }
   const data = await res.json();
   const binId = data.metadata.id;
-  // URL publica para leer (sin auth necesaria si es publico)
   return 'https://api.jsonbin.io/v3/b/' + binId + '/latest';
 }
 
@@ -425,7 +493,6 @@ function bindInputs() {
     if (!el) return;
     el.addEventListener('input', () => {
       state[id] = parseFloat(el.value) || 0;
-      // Si cambiaron dimensiones, regenerar regular para limpiar
       if (['nx','ny','nz'].includes(id)) {
         regenerarRegular();
       } else {
@@ -435,7 +502,6 @@ function bindInputs() {
     });
   });
 
-  // Checkboxes
   document.getElementById('useSismo').addEventListener('change', e => {
     state.useSismo = e.target.checked;
     actualizarBytes();
@@ -455,12 +521,13 @@ function bindInputs() {
     actualizarBytes();
   });
 
-  // Modos
   document.querySelectorAll('.modo-btn').forEach(b => {
     b.addEventListener('click', () => {
       document.querySelectorAll('.modo-btn').forEach(x => x.classList.remove('activo'));
       b.classList.add('activo');
       state.modo = b.dataset.modo;
+      const nombres = { ver: 'Modo Ver', borrar: 'Modo Borrar — toca un elemento', apoyo: 'Modo Apoyo — toca un nodo de la base' };
+      setEstado(nombres[state.modo], 'info');
     });
   });
 
@@ -472,7 +539,6 @@ function bindInputs() {
     });
   });
 
-  // Botones
   document.getElementById('btnRegular').addEventListener('click', regenerarRegular);
   document.getElementById('btnGenerar').addEventListener('click', generarQR);
 
