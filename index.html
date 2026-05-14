@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ReiDyn Builder — Constructor MGDL 3D</title>
+<link rel="stylesheet" href="style.css">
+
+<!-- Three.js para vista 3D -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+<!-- QR code generator -->
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+
+<!-- LZString para comprimir el JSON -->
+<script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
+</head>
+<body>
+
+<header>
+  <h1>ReiDyn AR</h1>
+  <p class="subtitle">Constructor de estructuras MGDL 3D</p>
+  <p class="author">RiSK — Universidad del Valle · Andrés Muñoz</p>
+</header>
+
+<main>
+
+  <!-- ============================================ -->
+  <!-- COLUMNA IZQUIERDA: INPUTS                    -->
+  <!-- ============================================ -->
+  <section class="panel" id="panel-inputs">
+
+    <h2>1. Dimensiones</h2>
+    <div class="grid-2">
+      <div class="field">
+        <label>Ejes en X</label>
+        <input type="number" id="nx" min="2" max="8" value="3">
+      </div>
+      <div class="field">
+        <label>Niveles (pisos)</label>
+        <input type="number" id="ny" min="1" max="10" value="3">
+      </div>
+      <div class="field">
+        <label>Marcos en Z</label>
+        <input type="number" id="nz" min="1" max="6" value="3">
+      </div>
+      <div class="field">
+        <label>Espaciado X (m)</label>
+        <input type="number" id="sx" min="1" max="20" step="0.5" value="5">
+      </div>
+      <div class="field">
+        <label>Altura piso (m)</label>
+        <input type="number" id="sy" min="1" max="6" step="0.1" value="3">
+      </div>
+      <div class="field">
+        <label>Profundidad Z (m)</label>
+        <input type="number" id="sz" min="1" max="20" step="0.5" value="4">
+      </div>
+    </div>
+
+    <h2>2. Propiedades</h2>
+    <div class="grid-2">
+      <div class="field">
+        <label>E (GPa)</label>
+        <input type="number" id="E" min="1" max="200" step="0.5" value="25">
+      </div>
+      <div class="field">
+        <label>Sección b (cm)</label>
+        <input type="number" id="b" min="10" max="80" step="1" value="30">
+      </div>
+      <div class="field">
+        <label>Peso/piso W (kN)</label>
+        <input type="number" id="W" min="10" max="2000" step="10" value="200">
+      </div>
+      <div class="field">
+        <label>Zeta (amort.)</label>
+        <input type="number" id="z" min="0" max="0.3" step="0.01" value="0.05">
+      </div>
+    </div>
+
+    <h2>3. Modo de edición</h2>
+    <div class="modos">
+      <button class="modo-btn activo" data-modo="ver">Ver</button>
+      <button class="modo-btn" data-modo="borrar">Borrar elemento</button>
+      <button class="modo-btn" data-modo="apoyo">Apoyo</button>
+    </div>
+
+    <h2>4. Apoyo seleccionado</h2>
+    <div class="modos apoyos">
+      <button class="apoyo-btn activo" data-apoyo="1">Empotrado</button>
+      <button class="apoyo-btn" data-apoyo="2">Articulado</button>
+      <button class="apoyo-btn" data-apoyo="3">Patín</button>
+    </div>
+
+    <h2>5. Excitación</h2>
+    <div class="excit">
+      <label class="chk">
+        <input type="checkbox" id="useSismo">
+        <span>Sismo</span>
+      </label>
+      <select id="regSismo">
+        <option value="0">El Centro 1940</option>
+        <option value="1">Kobe</option>
+        <option value="2">Northridge</option>
+        <option value="3">Chile 2010</option>
+      </select>
+
+      <label class="chk">
+        <input type="checkbox" id="useSin">
+        <span>Sinusoidal</span>
+      </label>
+      <div class="sub" id="subSin" style="display:none;">
+        <div class="field"><label>Amplitud (N)</label><input type="number" id="ampSin" value="500"></div>
+        <div class="field"><label>Frecuencia (Hz)</label><input type="number" id="frecSin" value="2" step="0.1"></div>
+        <div class="field"><label>Piso</label><input type="number" id="pisoSin" value="3" min="1"></div>
+      </div>
+
+      <label class="chk">
+        <input type="checkbox" id="useCI">
+        <span>Cond. iniciales</span>
+      </label>
+      <div class="sub" id="subCI" style="display:none;">
+        <div class="field"><label>Desp. inicial (m)</label><input type="number" id="u0" value="0.02" step="0.005"></div>
+        <div class="field"><label>Vel. inicial (m/s)</label><input type="number" id="v0" value="0" step="0.01"></div>
+        <div class="field"><label>Piso</label><input type="number" id="pisoCI" value="3" min="1"></div>
+      </div>
+
+      <div class="field" style="margin-top:8px;">
+        <label>Tiempo total (s)</label>
+        <input type="number" id="tt" value="30" min="5" max="120">
+      </div>
+    </div>
+
+    <h2>6. Acciones</h2>
+    <button class="btn-primario" id="btnRegular">Regenerar regular</button>
+    <button class="btn-secundario" id="btnGenerar">Generar QR / JSON</button>
+
+    <div id="estado" class="estado"></div>
+  </section>
+
+  <!-- ============================================ -->
+  <!-- COLUMNA CENTRAL: VISTA 3D                    -->
+  <!-- ============================================ -->
+  <section class="panel" id="panel-3d">
+    <h2>Vista 3D</h2>
+    <div id="canvas-container"></div>
+    <p class="leyenda">
+      <span class="dot col-col"></span> Columna &nbsp;
+      <span class="dot col-vx"></span> Viga X &nbsp;
+      <span class="dot col-vz"></span> Viga Z &nbsp;
+      <span class="dot col-ap"></span> Apoyo &nbsp;
+      <span class="dot col-elim"></span> Eliminado
+    </p>
+    <p class="tip">Click en un elemento para alternar (en modo "Borrar"). Click+arrastrar para rotar. Scroll para zoom.</p>
+  </section>
+
+  <!-- ============================================ -->
+  <!-- COLUMNA DERECHA: SALIDA QR/JSON              -->
+  <!-- ============================================ -->
+  <section class="panel" id="panel-salida">
+    <h2>Salida</h2>
+
+    <div class="info-box" id="infoTamano">
+      Tamaño JSON: <span id="bytes-raw">—</span> bytes <br>
+      Comprimido: <span id="bytes-comp">—</span> bytes <br>
+      Modo QR: <span id="modo-qr" class="badge badge-A">QR Directo (offline)</span>
+    </div>
+
+    <div id="qr-container"></div>
+
+    <h3>JSON generado</h3>
+    <textarea id="jsonOut" readonly placeholder="Presiona 'Generar QR / JSON' para crear..."></textarea>
+
+    <div class="acciones-salida">
+      <button class="btn-secundario" id="btnCopiar">Copiar JSON</button>
+      <button class="btn-secundario" id="btnDescargar">Descargar .json</button>
+    </div>
+
+    <details class="config-avanzada">
+      <summary>Configuración avanzada</summary>
+      <div class="field">
+        <label>Forzar uso de JSONBin (estructuras grandes)</label>
+        <input type="checkbox" id="forzarJsonBin">
+      </div>
+      <div class="field">
+        <label>JSONBin API Key (opcional, para guardar)</label>
+        <input type="text" id="jsonBinKey" placeholder="$2a$10$... o vacío">
+      </div>
+      <p class="hint">
+        Si la estructura no cabe en QR (>1.5 KB), se sube a JSONBin.io y
+        el QR contiene la URL corta. Sin API key se usa modo público.
+      </p>
+    </details>
+  </section>
+
+</main>
+
+<footer>
+  <p>ReiDyn Builder v1.0 · Genera estructuras compatibles con ReiDyn AR</p>
+</footer>
+
+<script src="script.js"></script>
+
+</body>
+</html>

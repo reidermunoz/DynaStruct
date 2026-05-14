@@ -1,0 +1,420 @@
+/* ============================================================
+   ReiDyn Builder — Estilos
+   Tema oscuro consistente con la app Unity
+   ============================================================ */
+
+:root {
+  --bg-0: #0d0d10;
+  --bg-1: #16161c;
+  --bg-2: #1f1f28;
+  --bg-3: #2a2a36;
+  --border: #2e2e3a;
+
+  --txt-1: #e8e8ec;
+  --txt-2: #a0a0aa;
+  --txt-3: #6e6e7a;
+
+  --col-columna: #5DCAA5;   /* verde */
+  --col-vigax: #378ADD;     /* azul */
+  --col-vigaz: #AFA9EC;     /* morado */
+  --col-apoyo: #BA7517;     /* naranja */
+  --col-elim: #555;          /* gris */
+  --col-primario: #1B9F75;
+  --col-secundario: #2a5680;
+  --col-peligro: #E24B4A;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg-0);
+  color: var(--txt-1);
+  font-size: 14px;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+header h1 {
+  font-size: 28px;
+  background: linear-gradient(90deg, #5DCAA5, #378ADD);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+header .subtitle {
+  color: var(--txt-2);
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+header .author {
+  color: var(--txt-3);
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+main {
+  display: grid;
+  grid-template-columns: 320px 1fr 340px;
+  gap: 16px;
+  max-width: 1500px;
+  margin: 0 auto;
+}
+
+.panel {
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  overflow-y: auto;
+  max-height: calc(100vh - 140px);
+}
+
+.panel h2 {
+  font-size: 13px;
+  color: var(--txt-2);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 16px;
+  margin-bottom: 10px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.panel h2:first-of-type { margin-top: 0; }
+
+.panel h3 {
+  font-size: 12px;
+  color: var(--txt-2);
+  margin-top: 14px;
+  margin-bottom: 6px;
+}
+
+/* ============================================================
+   INPUTS
+   ============================================================ */
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+}
+
+.field label {
+  font-size: 11px;
+  color: var(--txt-3);
+  margin-bottom: 4px;
+}
+
+input[type="number"],
+input[type="text"],
+select,
+textarea {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  color: var(--txt-1);
+  padding: 7px 9px;
+  border-radius: 5px;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+input[type="number"]:focus,
+input[type="text"]:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--col-vigax);
+}
+
+textarea {
+  width: 100%;
+  min-height: 120px;
+  font-family: "Consolas", "Monaco", monospace;
+  font-size: 11px;
+  resize: vertical;
+}
+
+select {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.chk {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 6px 0;
+  user-select: none;
+}
+
+.chk input { width: 16px; height: 16px; }
+
+.sub {
+  margin-left: 22px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 8px;
+  background: var(--bg-2);
+  border-radius: 5px;
+  margin-bottom: 8px;
+}
+
+/* ============================================================
+   BOTONES
+   ============================================================ */
+
+button {
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  color: var(--txt-1);
+  padding: 8px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  transition: all 0.1s;
+}
+
+button:hover { background: #353541; }
+
+button:active { transform: translateY(1px); }
+
+.btn-primario {
+  background: var(--col-primario);
+  border-color: var(--col-primario);
+  width: 100%;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.btn-primario:hover { background: #25b487; }
+
+.btn-secundario {
+  background: var(--col-secundario);
+  border-color: var(--col-secundario);
+  width: 100%;
+  margin-bottom: 4px;
+}
+
+.btn-secundario:hover { background: #336a99; }
+
+.modos {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 4px;
+}
+
+.modos.apoyos { grid-template-columns: 1fr 1fr 1fr; }
+
+.modo-btn,
+.apoyo-btn {
+  padding: 8px 4px;
+  font-size: 12px;
+}
+
+.modo-btn.activo {
+  background: var(--col-primario);
+  border-color: var(--col-primario);
+  color: white;
+  font-weight: 600;
+}
+
+.apoyo-btn.activo {
+  background: var(--col-apoyo);
+  border-color: var(--col-apoyo);
+  color: white;
+}
+
+/* ============================================================
+   VISTA 3D
+   ============================================================ */
+
+#panel-3d { display: flex; flex-direction: column; }
+
+#canvas-container {
+  flex: 1;
+  min-height: 500px;
+  background: #08080c;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+}
+
+#canvas-container canvas { display: block; }
+
+.leyenda {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--txt-2);
+  text-align: center;
+}
+
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  margin-right: 3px;
+  vertical-align: middle;
+}
+
+.col-col { background: var(--col-columna); }
+.col-vx { background: var(--col-vigax); }
+.col-vz { background: var(--col-vigaz); }
+.col-ap { background: var(--col-apoyo); }
+.col-elim { background: var(--col-elim); }
+
+.tip {
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--txt-3);
+  text-align: center;
+  font-style: italic;
+}
+
+/* ============================================================
+   SALIDA / QR
+   ============================================================ */
+
+.info-box {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 10px;
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+
+.info-box span { color: var(--txt-1); font-weight: 600; }
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.badge-A { background: #1B9F75; color: white; }
+.badge-B { background: #c46e1a; color: white; }
+
+#qr-container {
+  background: white;
+  padding: 16px;
+  border-radius: 6px;
+  text-align: center;
+  margin: 12px 0;
+  min-height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#qr-container canvas { max-width: 100%; }
+
+#qr-container .qr-placeholder {
+  color: #444;
+  font-size: 12px;
+}
+
+.acciones-salida {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.acciones-salida button { margin: 0; }
+
+.estado {
+  margin-top: 10px;
+  padding: 8px;
+  border-radius: 5px;
+  font-size: 12px;
+  text-align: center;
+  min-height: 20px;
+}
+
+.estado.ok {
+  background: rgba(27, 159, 117, 0.15);
+  color: #5DCAA5;
+  border: 1px solid #1B9F75;
+}
+
+.estado.error {
+  background: rgba(226, 75, 74, 0.15);
+  color: #ff7e7e;
+  border: 1px solid #E24B4A;
+}
+
+.estado.info {
+  background: rgba(55, 138, 221, 0.15);
+  color: #88c0ee;
+  border: 1px solid #378ADD;
+}
+
+.config-avanzada {
+  margin-top: 16px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 10px;
+}
+
+.config-avanzada summary {
+  cursor: pointer;
+  color: var(--txt-2);
+  font-size: 12px;
+  user-select: none;
+}
+
+.config-avanzada .field { margin-top: 8px; }
+
+.hint {
+  font-size: 10px;
+  color: var(--txt-3);
+  margin-top: 6px;
+  font-style: italic;
+}
+
+footer {
+  text-align: center;
+  color: var(--txt-3);
+  font-size: 11px;
+  margin-top: 24px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 1200px) {
+  main { grid-template-columns: 280px 1fr 300px; gap: 12px; }
+  .panel { padding: 12px; }
+}
+
+@media (max-width: 900px) {
+  main { grid-template-columns: 1fr; }
+  .panel { max-height: none; }
+  #canvas-container { min-height: 400px; }
+}
