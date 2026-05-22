@@ -395,7 +395,7 @@ function actualizarBytes() {
   document.getElementById('bytes-raw').textContent = json.length;
   document.getElementById('bytes-comp').textContent = comp.length;
 
-  const limite = 1500;
+  const limite = 1200;
   const forzar = document.getElementById('forzarJsonBin').checked;
   const modoB = (comp.length > limite || forzar);
   const badge = document.getElementById('modo-qr');
@@ -441,8 +441,9 @@ async function generarQR() {
       console.error(err);
       return;
     }
-  } else {
-    qrPayload = "RDYN:Z:" + compStr;
+   } else {
+    // JSON directo SIN comprimir (mas confiable para Unity)
+    qrPayload = "RDYN:J:" + jsonStr;
     setEstado('QR generado correctamente', 'ok');
   }
 
