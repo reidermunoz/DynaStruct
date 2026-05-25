@@ -128,8 +128,8 @@ function redibujar() {
     for (let ex = 0; ex < state.nx; ex++) {
       for (let ny = 0; ny < state.ny; ny++) {
         const elim = esEliminado(1, ex, ny, mz);
-        const p1 = new THREE.Vector3(ex * state.sx - cx, ny * state.sy, mz * state.sz - cz);
-        const p2 = new THREE.Vector3(ex * state.sx - cx, (ny + 1) * state.sy, mz * state.sz - cz);
+        const p1 = new THREE.Vector3(ex * state.sx - cx, ny * state.sy, -(mz * state.sz - cz));
+        const p2 = new THREE.Vector3(ex * state.sx - cx, (ny + 1) * state.sy, -(mz * state.sz - cz));
         crearElemento(p1, p2, elim ? colores.eliminado : colores.columna, grosor,
           { tipo: 1, ex, ny, mz });
       }
@@ -141,8 +141,8 @@ function redibujar() {
     for (let ny = 1; ny <= state.ny; ny++) {
       for (let ex = 0; ex < state.nx - 1; ex++) {
         const elim = esEliminado(2, ex, ny, mz);
-        const p1 = new THREE.Vector3(ex * state.sx - cx, ny * state.sy, mz * state.sz - cz);
-        const p2 = new THREE.Vector3((ex + 1) * state.sx - cx, ny * state.sy, mz * state.sz - cz);
+        const p1 = new THREE.Vector3(ex * state.sx - cx, ny * state.sy, -(mz * state.sz - cz));
+        const p2 = new THREE.Vector3((ex + 1) * state.sx - cx, ny * state.sy, -(mz * state.sz - cz));
         crearElemento(p1, p2, elim ? colores.eliminado : colores.vigaX, grosor,
           { tipo: 2, ex, ny, mz });
       }
@@ -154,7 +154,7 @@ function redibujar() {
     for (let ex = 0; ex < state.nx; ex++) {
       for (let mz = 0; mz < state.nz - 1; mz++) {
         const elim = esEliminado(3, ex, ny, mz);
-        const p1 = new THREE.Vector3(ex * state.sx - cx, ny * state.sy, mz * state.sz - cz);
+        const p1 = new THREE.Vector3(ex * state.sx - cx, ny * state.sy, -(mz * state.sz - cz));
         const p2 = new THREE.Vector3(ex * state.sx - cx, ny * state.sy, (mz + 1) * state.sz - cz);
         crearElemento(p1, p2, elim ? colores.eliminado : colores.vigaZ, grosor,
           { tipo: 3, ex, ny, mz });
@@ -167,7 +167,7 @@ function redibujar() {
     for (let ex = 0; ex < state.nx; ex++) {
       for (let ny = 0; ny <= state.ny; ny++) {
         const nodoId = obtenerIdNodo(ex, ny, mz);
-        const p = new THREE.Vector3(ex * state.sx - cx, ny * state.sy, mz * state.sz - cz);
+        const p = new THREE.Vector3(ex * state.sx - cx, ny * state.sy, -(mz * state.sz - cz));
 
         if (ny === 0 && state.apoyos[nodoId]) {
           // Apoyo: dibujar forma especial segun tipo
