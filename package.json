@@ -1,0 +1,7 @@
+{
+  "name": "reidyn-ia-backend",
+  "version": "1.0.0",
+  "description": "Backend serverless para analisis estructural con IA (Gemini) - ReiDyn AR",
+  "private": true,
+  "type": "module"
+}
