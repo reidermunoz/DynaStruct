@@ -86,6 +86,7 @@ function init3D() {
   scene.add(new THREE.AxesHelper(2));
 
   estructuraGroup = new THREE.Group();
+   estructuraGroup.scale.z = -1; 
   scene.add(estructuraGroup);
 
   window.addEventListener('resize', onResize);
