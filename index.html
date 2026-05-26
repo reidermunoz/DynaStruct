@@ -149,6 +149,7 @@ if (typeof QRious === 'undefined') {
     <h2>6. Acciones</h2>
     <button class="btn-primario" id="btnRegular">Regenerar estructura regular</button>
     <button class="btn-secundario" id="btnGenerar">Generar QR / JSON</button>
+    <button class="btn-ia" id="btnIA">✨ Crear con IA</button>
 
     <div id="estado" class="estado"></div>
   </section>
@@ -221,6 +222,58 @@ if (typeof QRious === 'undefined') {
 </footer>
 
 <script src="script.js"></script>
+<script src="ia.js"></script>
 
+
+  <div id="ia-modal" class="ia-modal-overlay">
+  <div class="ia-modal">
+    <div class="ia-modal-header">
+      <h2 style="margin:0;">Crear estructura con IA</h2>
+      <button id="ia-cerrar" class="ia-cerrar-btn">✕</button>
+    </div>
+ 
+    <!-- Tabs -->
+    <div class="ia-tabs">
+      <button class="ia-tab activo" data-modo="dibujo">✏️ Dibujar</button>
+      <button class="ia-tab" data-modo="imagen">🖼️ Subir imagen</button>
+    </div>
+ 
+    <!-- Panel: Dibujar -->
+    <div id="ia-panel-dibujo" class="ia-panel">
+      <p class="ia-hint">Dibuja un boceto de tu estructura: columnas verticales, vigas horizontales, pisos. No necesita ser perfecto.</p>
+      <canvas id="ia-canvas" width="600" height="450" class="ia-canvas"></canvas>
+      <div class="ia-canvas-tools">
+        <button class="btn-secundario" id="ia-deshacer">Deshacer</button>
+        <button class="btn-secundario" id="ia-limpiar">Limpiar</button>
+        <button class="btn-primario" id="ia-analizar-dibujo">Analizar dibujo</button>
+      </div>
+    </div>
+ 
+    <!-- Panel: Subir imagen -->
+    <div id="ia-panel-imagen" class="ia-panel" style="display:none;">
+      <p class="ia-hint">Sube una foto de un boceto, esquema estructural o maqueta. La IA intentará reconocer la estructura.</p>
+      <label class="ia-upload-zone">
+        <input type="file" id="ia-input-imagen" accept="image/*" hidden>
+        <span>📁 Haz clic para seleccionar una imagen</span>
+      </label>
+      <img id="ia-preview" class="ia-preview" style="display:none;" alt="Vista previa">
+    </div>
+ 
+    <!-- Spinner -->
+    <div id="ia-spinner" class="ia-spinner" style="display:none;">
+      <div class="ia-spinner-circle"></div>
+      <span>Analizando con IA...</span>
+    </div>
+ 
+    <!-- Estado -->
+    <div id="ia-estado" class="estado" style="display:none;"></div>
+ 
+    <!-- Resultado / validacion -->
+    <div id="ia-resultado" class="ia-resultado" style="display:none;"></div>
+  </div>
+</div>
+
+
+  
 </body>
 </html>
