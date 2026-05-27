@@ -363,7 +363,7 @@ function onCanvasClick(event) {
      
     redibujar();
     actualizarBytes();
-  }  } else if (state.modo === 'diagonal' && ud.tipo === 'nodo') {
+   } else if (state.modo === 'diagonal' && ud.tipo === 'nodo') {
     if (nodoDiagonalSel < 0) {
       nodoDiagonalSel = ud.nodoId;
       setEstado('Nodo inicial seleccionado. Toca el segundo nodo.', 'info');
