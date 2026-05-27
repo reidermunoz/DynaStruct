@@ -11,6 +11,7 @@ const state = {
   E: 25, b: 30, W: 200, z: 0.05,
   elementosEliminados: [],  // [tipo, ex, ny, mz] tipo: 1=col, 2=vigaX, 3=vigaZ
   apoyos: {},                // { nodoId: tipo }  tipo: 1=emp, 2=art, 3=patin
+   diagonales: [],
   modo: 'ver',
   apoyoSel: 1,
   useSismo: false, regSismo: 0,
@@ -25,12 +26,14 @@ const state = {
 let scene, camera, renderer, controls;
 let estructuraGroup;
 let raycaster, mouse;
+let nodoDiagonalSel = -1;
 
 // Colores consistentes con app Unity
 const colores = {
   columna:   0x5DCAA5,  // verde
   vigaX:     0x378ADD,  // azul
   vigaZ:     0xAFA9EC,  // morado
+   diagonal:  0xFF6B4A,  //naranja rojo
   apoyoEmp:  0xBA7517,  // naranja oscuro
   apoyoArt:  0xE4A33B,  // dorado
   apoyoPat:  0xE5C870,  // amarillo claro
@@ -163,6 +166,17 @@ function redibujar() {
     }
   }
 
+   // Diagonales (riostras)
+  for (const diag of state.diagonales) {
+    const nodoA = diag[0];
+    const nodoB = diag[1];
+    const coordA = coordNodo(nodoA);
+    const coordB = coordNodo(nodoB);
+    if (!coordA || !coordB) continue;
+    crearElemento(coordA, coordB, colores.diagonal, grosor * 0.85,
+      { tipo: 'diagonal', nodoA, nodoB });
+  }
+
   // Nodos
   for (let mz = 0; mz < state.nz; mz++) {
     for (let ex = 0; ex < state.nx; ex++) {
@@ -173,8 +187,15 @@ function redibujar() {
         if (ny === 0 && state.apoyos[nodoId]) {
           crearApoyoVisual(p, state.apoyos[nodoId], radioNodo, nodoId);
         } else {
+          // Nodo normal
           let r = ny > 0 ? radioNodo : radioNodo * 0.8;
-          crearNodo(p, colores.nodo, r, { tipo: 'nodo', ex, ny, mz, nodoId });
+          let colorNodo = colores.nodo;
+          // Resaltar si es el nodo seleccionado para diagonal
+          if (nodoDiagonalSel === nodoId) {
+            colorNodo = 0xFFFF00;  // amarillo
+            r = radioNodo * 1.4;
+          }
+          crearNodo(p, colorNodo, r, { tipo: 'nodo', ex, ny, mz, nodoId });
         }
       }
     }
@@ -299,23 +320,35 @@ function onCanvasClick(event) {
   const hits = raycaster.intersectObjects(estructuraGroup.children, true);
   if (hits.length === 0) return;
 
-  let target = null;
+   let target = null;
   if (state.modo === 'apoyo') {
     target = hits.find(h => h.object.userData.tipo === 'nodo' && h.object.userData.ny === 0);
   } else if (state.modo === 'editar') {
     target = hits.find(h => h.object.userData.tipo === 1 ||
                             h.object.userData.tipo === 2 ||
-                            h.object.userData.tipo === 3);
+                            h.object.userData.tipo === 3 ||
+                            h.object.userData.tipo === 'diagonal');
+  } else if (state.modo === 'diagonal') {
+    target = hits.find(h => h.object.userData.tipo === 'nodo');
   }
   if (!target) return;
 
   const ud = target.object.userData;
 
   if (state.modo === 'editar') {
-    toggleEliminado(ud.tipo, ud.ex, ud.ny, ud.mz);
+    if (ud.tipo === 'diagonal') {
+      // Borrar la diagonal
+      const idx = state.diagonales.findIndex(d =>
+        (d[0] === ud.nodoA && d[1] === ud.nodoB) ||
+        (d[0] === ud.nodoB && d[1] === ud.nodoA));
+      if (idx >= 0) state.diagonales.splice(idx, 1);
+      setEstado('Diagonal eliminada', 'info');
+    } else {
+      toggleEliminado(ud.tipo, ud.ex, ud.ny, ud.mz);
+      setEstado(esEliminado(ud.tipo, ud.ex, ud.ny, ud.mz) ? 'Elemento eliminado' : 'Elemento restaurado', 'ok');
+    }
     redibujar();
     actualizarBytes();
-    setEstado(esEliminado(ud.tipo, ud.ex, ud.ny, ud.mz) ? 'Elemento eliminado' : 'Elemento restaurado', 'ok');
   } else if (state.modo === 'apoyo' && ud.ny === 0) {
     if (state.apoyos[ud.nodoId] === state.apoyoSel) {
       delete state.apoyos[ud.nodoId];
@@ -325,6 +358,9 @@ function onCanvasClick(event) {
       const nombres = { 1: 'Empotrado', 2: 'Articulado', 3: 'Patín' };
       setEstado('Apoyo ' + nombres[state.apoyoSel] + ' asignado', 'ok');
     }
+     
+     
+     
     redibujar();
     actualizarBytes();
   }
@@ -335,6 +371,24 @@ function onCanvasClick(event) {
 // ============================================================
 function obtenerIdNodo(ex, ny, mz) {
   return mz * (state.nx * (state.ny + 1)) + ex * (state.ny + 1) + ny;
+}
+
+// Devuelve la posicion 3D (Vector3) de un nodo dado su id
+function coordNodo(nodoId) {
+  // Descomponer el id en (ex, ny, mz) - inverso de obtenerIdNodo
+  const porMarco = state.nx * (state.ny + 1);
+  const mz = Math.floor(nodoId / porMarco);
+  const resto = nodoId % porMarco;
+  const ex = Math.floor(resto / (state.ny + 1));
+  const ny = resto % (state.ny + 1);
+  if (mz >= state.nz || ex >= state.nx || ny > state.ny) return null;
+  const cx = (state.nx - 1) * state.sx / 2;
+  const cz = (state.nz - 1) * state.sz / 2;
+  return new THREE.Vector3(
+    ex * state.sx - cx,
+    ny * state.sy,
+    mz * state.sz - cz
+  );
 }
 
 function esEliminado(tipo, ex, ny, mz) {
@@ -352,6 +406,8 @@ function toggleEliminado(tipo, ex, ny, mz) {
 function regenerarRegular() {
   state.elementosEliminados = [];
   state.apoyos = {};
+   state.diagonales = [];    
+  nodoDiagonalSel = -1;
   for (let mz = 0; mz < state.nz; mz++) {
     for (let ex = 0; ex < state.nx; ex++) {
       const nodoId = obtenerIdNodo(ex, 0, mz);
@@ -377,6 +433,7 @@ function construirJSON() {
     z: round3(state.z), tt: round2(state.tt),
     elim: state.elementosEliminados,
     ap: Object.entries(state.apoyos).map(([id, t]) => [parseInt(id), t]),
+     diag: state.diagonales, 
     exc: {}
   };
   if (state.useSismo) obj.exc.sis = state.regSismo;
