@@ -363,6 +363,31 @@ function onCanvasClick(event) {
      
     redibujar();
     actualizarBytes();
+  }  } else if (state.modo === 'diagonal' && ud.tipo === 'nodo') {
+    if (nodoDiagonalSel < 0) {
+      nodoDiagonalSel = ud.nodoId;
+      setEstado('Nodo inicial seleccionado. Toca el segundo nodo.', 'info');
+      redibujar();
+    } else if (nodoDiagonalSel === ud.nodoId) {
+      nodoDiagonalSel = -1;
+      setEstado('Selección cancelada', 'info');
+      redibujar();
+    } else {
+      const a = nodoDiagonalSel;
+      const b = ud.nodoId;
+      const idx = state.diagonales.findIndex(d =>
+        (d[0] === a && d[1] === b) || (d[0] === b && d[1] === a));
+      if (idx >= 0) {
+        state.diagonales.splice(idx, 1);
+        setEstado('Diagonal eliminada', 'info');
+      } else {
+        state.diagonales.push([a, b]);
+        setEstado('Diagonal creada', 'ok');
+      }
+      nodoDiagonalSel = -1;
+      redibujar();
+      actualizarBytes();
+    }
   }
 }
 
@@ -608,6 +633,7 @@ function bindInputs() {
         ver: 'Solo rotar/ver la estructura',
         editar: 'Toca una viga o columna para eliminarla. Vuelve a tocarla para restaurar.',
         apoyo: 'Toca un nodo de la base para asignarle el apoyo seleccionado.'
+        diagonal: 'Toca dos nodos para crear una diagonal entre ellos.'
       };
       document.getElementById('hintModo').textContent = hints[state.modo];
     });
