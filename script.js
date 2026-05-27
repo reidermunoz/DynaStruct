@@ -632,7 +632,7 @@ function bindInputs() {
       const hints = {
         ver: 'Solo rotar/ver la estructura',
         editar: 'Toca una viga o columna para eliminarla. Vuelve a tocarla para restaurar.',
-        apoyo: 'Toca un nodo de la base para asignarle el apoyo seleccionado.'
+        apoyo: 'Toca un nodo de la base para asignarle el apoyo seleccionado.',
         diagonal: 'Toca dos nodos para crear una diagonal entre ellos.'
       };
       document.getElementById('hintModo').textContent = hints[state.modo];
