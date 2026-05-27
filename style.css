@@ -217,13 +217,20 @@ button:active { transform: translateY(1px); }
 
 .modos {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 4px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
 }
 
 .modos.apoyos { grid-template-columns: 1fr 1fr 1fr; }
 
-.modo-btn,
+.modo-btn {
+  padding: 10px 4px;
+  font-size: 11px;
+  text-align: center;
+  line-height: 1.2;
+  border-radius: 6px;
+  /* mantené tus otros estilos (background, color, border, cursor) */
+}
 .apoyo-btn {
   padding: 8px 4px;
   font-size: 12px;
