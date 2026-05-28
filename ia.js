@@ -196,6 +196,33 @@ function iaAplicarEstructura(est) {
     }
   }
 
+    // Aplicar diagonales detectadas por la IA
+  state.diagonales = [];
+  if (Array.isArray(est.diagonales)) {
+    for (const d of est.diagonales) {
+      // Validar que los nodos esten dentro de la grilla
+      const exA = Math.max(0, Math.min(state.nx - 1, d.ejeXA || 0));
+      const nyA = Math.max(0, Math.min(state.ny, d.nivelYA || 0));
+      const mzA = Math.max(0, Math.min(state.nz - 1, d.marcoZA || 0));
+      const exB = Math.max(0, Math.min(state.nx - 1, d.ejeXB || 0));
+      const nyB = Math.max(0, Math.min(state.ny, d.nivelYB || 0));
+      const mzB = Math.max(0, Math.min(state.nz - 1, d.marcoZB || 0));
+
+      const nodoA = obtenerIdNodo(exA, nyA, mzA);
+      const nodoB = obtenerIdNodo(exB, nyB, mzB);
+
+      // Evitar diagonales degeneradas (mismo nodo) o duplicadas
+      if (nodoA === nodoB) continue;
+      const yaExiste = state.diagonales.some(diag =>
+        (diag[0] === nodoA && diag[1] === nodoB) ||
+        (diag[0] === nodoB && diag[1] === nodoA));
+      if (!yaExiste) {
+        state.diagonales.push([nodoA, nodoB]);
+      }
+    }
+  }
+   
+
   // Sincronizar los inputs de la UI con los nuevos valores
   document.getElementById('nx').value = state.nx;
   document.getElementById('ny').value = state.ny;
