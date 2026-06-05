@@ -599,3 +599,111 @@ footer {
   margin-top: 12px;
 }
 
+/* ============================================================
+   MULTI-IMAGEN — estilos
+   ============================================================ */
+.ia-miniaturas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+  margin: 14px 0;
+  min-height: 130px;
+}
+ 
+.ia-miniatura {
+  position: relative;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  aspect-ratio: 1 / 1;
+}
+ 
+.ia-miniatura img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+ 
+.ia-miniatura-label {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: rgba(0,0,0,0.7);
+  color: white;
+  font-size: 11px;
+  text-align: center;
+  padding: 3px 0;
+}
+ 
+.ia-miniatura-quitar {
+  position: absolute;
+  top: 4px; right: 4px;
+  background: rgba(220, 50, 50, 0.9);
+  border: none;
+  color: white;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  line-height: 20px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ia-miniatura-quitar:hover { background: #f04040; }
+ 
+.ia-miniatura-add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--bg-2);
+  border: 2px dashed var(--border);
+  border-radius: 6px;
+  color: var(--txt-2);
+  cursor: pointer;
+  aspect-ratio: 1 / 1;
+  transition: all 0.2s;
+  font-size: 12px;
+}
+.ia-miniatura-add:hover {
+  border-color: var(--col-vigax);
+  color: var(--txt-1);
+}
+.ia-miniatura-add span {
+  font-size: 32px;
+  font-weight: 300;
+  line-height: 1;
+}
+ 
+.ia-imgs-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 12px 0;
+}
+ 
+.ia-contador {
+  font-size: 12px;
+  color: var(--txt-2);
+}
+ 
+.btn-pequeno {
+  padding: 6px 12px;
+  font-size: 12px;
+  margin: 0;
+  width: auto;
+}
+ 
+.btn-deshabilitado {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-deshabilitado:hover {
+  filter: none;
+}
+
