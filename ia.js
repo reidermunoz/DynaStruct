@@ -1,37 +1,41 @@
 /* ============================================================
-   ReiDyn Builder — Modulo de IA (dibujo + imagen)
-   Se conecta al backend de Vercel que llama a Gemini.
+   ReiDyn Builder — Modulo de IA v2 (multi-imagen)
+   Permite subir hasta 4 imagenes para mejor reconocimiento.
+   Mantiene canvas de dibujo libre para casos rapidos.
    ============================================================ */
 
-// URL de tu backend en Vercel
+// URL del backend en Vercel
 const IA_ENDPOINT = "https://dyna-struc-ia-backend-lvbj.vercel.app/api/analizar";
 
+// Configuracion
+const MAX_IMAGENES = 4;
+
 // ============================================================
-//  ESTADO DEL CANVAS DE DIBUJO
+//  ESTADO DEL CANVAS DE DIBUJO (igual que antes)
 // ============================================================
 let iaCanvas, iaCtx;
 let iaDibujando = false;
-let iaTrazos = [];          // historial para deshacer
+let iaTrazos = [];
 let iaTrazoActual = null;
 
 // ============================================================
-//  INICIALIZAR EL CANVAS DE DIBUJO
+//  ESTADO MULTI-IMAGEN
+//  Lista de objetos: { base64, mimeType, dataUrl }
+// ============================================================
+let iaImagenes = [];
+
+// ============================================================
+//  INICIALIZAR CANVAS (sin cambios)
 // ============================================================
 function iaInitCanvas() {
   iaCanvas = document.getElementById('ia-canvas');
   if (!iaCanvas) return;
   iaCtx = iaCanvas.getContext('2d');
-
-  // Fondo blanco (importante: la IA ve mejor sobre blanco)
   iaLimpiarCanvas();
-
-  // Eventos de mouse
   iaCanvas.addEventListener('mousedown', iaInicioTrazo);
   iaCanvas.addEventListener('mousemove', iaMoverTrazo);
   iaCanvas.addEventListener('mouseup', iaFinTrazo);
   iaCanvas.addEventListener('mouseleave', iaFinTrazo);
-
-  // Eventos tactiles (para tablets)
   iaCanvas.addEventListener('touchstart', iaTouchStart, { passive: false });
   iaCanvas.addEventListener('touchmove', iaTouchMove, { passive: false });
   iaCanvas.addEventListener('touchend', iaFinTrazo);
@@ -41,48 +45,25 @@ function iaPosicion(e) {
   const rect = iaCanvas.getBoundingClientRect();
   const scaleX = iaCanvas.width / rect.width;
   const scaleY = iaCanvas.height / rect.height;
-  return {
-    x: (e.clientX - rect.left) * scaleX,
-    y: (e.clientY - rect.top) * scaleY
-  };
+  return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
 }
 
-function iaInicioTrazo(e) {
-  iaDibujando = true;
-  const p = iaPosicion(e);
-  iaTrazoActual = [p];
-}
-
+function iaInicioTrazo(e) { iaDibujando = true; iaTrazoActual = [iaPosicion(e)]; }
 function iaMoverTrazo(e) {
   if (!iaDibujando) return;
-  const p = iaPosicion(e);
-  iaTrazoActual.push(p);
+  iaTrazoActual.push(iaPosicion(e));
   iaRedibujarCanvas();
-  // Dibujar el trazo en curso
   iaDibujarLinea(iaTrazoActual);
 }
-
 function iaFinTrazo() {
   if (!iaDibujando) return;
   iaDibujando = false;
-  if (iaTrazoActual && iaTrazoActual.length > 1) {
-    iaTrazos.push(iaTrazoActual);
-  }
+  if (iaTrazoActual && iaTrazoActual.length > 1) iaTrazos.push(iaTrazoActual);
   iaTrazoActual = null;
   iaRedibujarCanvas();
 }
-
-// Touch handlers
-function iaTouchStart(e) {
-  e.preventDefault();
-  const t = e.touches[0];
-  iaInicioTrazo({ clientX: t.clientX, clientY: t.clientY });
-}
-function iaTouchMove(e) {
-  e.preventDefault();
-  const t = e.touches[0];
-  iaMoverTrazo({ clientX: t.clientX, clientY: t.clientY });
-}
+function iaTouchStart(e) { e.preventDefault(); const t = e.touches[0]; iaInicioTrazo({ clientX: t.clientX, clientY: t.clientY }); }
+function iaTouchMove(e) { e.preventDefault(); const t = e.touches[0]; iaMoverTrazo({ clientX: t.clientX, clientY: t.clientY }); }
 
 function iaDibujarLinea(puntos) {
   iaCtx.strokeStyle = '#111';
@@ -91,17 +72,13 @@ function iaDibujarLinea(puntos) {
   iaCtx.lineCap = 'round';
   iaCtx.beginPath();
   iaCtx.moveTo(puntos[0].x, puntos[0].y);
-  for (let i = 1; i < puntos.length; i++) {
-    iaCtx.lineTo(puntos[i].x, puntos[i].y);
-  }
+  for (let i = 1; i < puntos.length; i++) iaCtx.lineTo(puntos[i].x, puntos[i].y);
   iaCtx.stroke();
 }
 
 function iaRedibujarCanvas() {
   iaLimpiarCanvas(false);
-  for (const trazo of iaTrazos) {
-    iaDibujarLinea(trazo);
-  }
+  for (const trazo of iaTrazos) iaDibujarLinea(trazo);
 }
 
 function iaLimpiarCanvas(borrarTrazos = true) {
@@ -110,57 +87,218 @@ function iaLimpiarCanvas(borrarTrazos = true) {
   iaCtx.fillRect(0, 0, iaCanvas.width, iaCanvas.height);
 }
 
-function iaDeshacer() {
-  iaTrazos.pop();
-  iaRedibujarCanvas();
-}
+function iaDeshacer() { iaTrazos.pop(); iaRedibujarCanvas(); }
 
 // ============================================================
-//  SUBIR IMAGEN
+//  MULTI-IMAGEN: cargar archivos y manejar la lista
 // ============================================================
-function iaCargarImagen(file) {
+function iaCargarArchivoComoImagen(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = e => {
-      // Devuelve base64 SIN el prefijo "data:image/...;base64,"
       const dataUrl = e.target.result;
       const base64 = dataUrl.split(',')[1];
       const mime = dataUrl.substring(5, dataUrl.indexOf(';'));
-      resolve({ base64, mime });
+      resolve({ base64, mimeType: mime, dataUrl });
     };
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
 }
 
-// ============================================================
-//  ENVIAR A LA IA (backend Vercel -> Gemini)
-// ============================================================
-async function iaAnalizar(base64, mimeType) {
-  const res = await fetch(IA_ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ imagenBase64: base64, mimeType })
+async function iaAgregarImagenes(files) {
+  if (!files || files.length === 0) return;
+
+  // Calcular cuantas podemos agregar
+  const espacioDisponible = MAX_IMAGENES - iaImagenes.length;
+  if (espacioDisponible <= 0) {
+    iaSetEstado(`Maximo ${MAX_IMAGENES} imagenes. Elimina alguna primero.`, 'error');
+    return;
+  }
+
+  const aProcesar = Array.from(files).slice(0, espacioDisponible);
+  const ignoradas = files.length - aProcesar.length;
+
+  for (const file of aProcesar) {
+    if (!file.type.startsWith('image/')) {
+      iaSetEstado(`"${file.name}" no es una imagen, se ignora`, 'error');
+      continue;
+    }
+    try {
+      const img = await iaCargarArchivoComoImagen(file);
+      iaImagenes.push(img);
+    } catch (err) {
+      iaSetEstado('Error al cargar imagen: ' + err.message, 'error');
+    }
+  }
+
+  if (ignoradas > 0) {
+    iaSetEstado(`Se agregaron ${aProcesar.length} imagenes. ${ignoradas} ignoradas (max ${MAX_IMAGENES}).`, 'info');
+  } else {
+    iaSetEstado(`${iaImagenes.length}/${MAX_IMAGENES} imagenes cargadas`, 'info');
+  }
+
+  iaRenderizarMiniaturas();
+  iaActualizarBotonAnalizar();
+}
+
+function iaQuitarImagen(idx) {
+  if (idx < 0 || idx >= iaImagenes.length) return;
+  iaImagenes.splice(idx, 1);
+  iaRenderizarMiniaturas();
+  iaActualizarBotonAnalizar();
+  iaSetEstado(`${iaImagenes.length}/${MAX_IMAGENES} imagenes`, 'info');
+}
+
+function iaLimpiarImagenes() {
+  iaImagenes = [];
+  iaRenderizarMiniaturas();
+  iaActualizarBotonAnalizar();
+}
+
+function iaRenderizarMiniaturas() {
+  const cont = document.getElementById('ia-miniaturas');
+  if (!cont) return;
+  cont.innerHTML = '';
+
+  // Renderizar cada imagen con boton de borrar
+  iaImagenes.forEach((img, idx) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'ia-miniatura';
+
+    const im = document.createElement('img');
+    im.src = img.dataUrl;
+    im.alt = 'Vista ' + (idx + 1);
+
+    const lbl = document.createElement('div');
+    lbl.className = 'ia-miniatura-label';
+    lbl.textContent = 'Vista ' + (idx + 1);
+
+    const btn = document.createElement('button');
+    btn.className = 'ia-miniatura-quitar';
+    btn.type = 'button';
+    btn.innerHTML = '&times;';
+    btn.title = 'Quitar';
+    btn.onclick = () => iaQuitarImagen(idx);
+
+    wrap.appendChild(im);
+    wrap.appendChild(lbl);
+    wrap.appendChild(btn);
+    cont.appendChild(wrap);
   });
 
-  if (!res.ok) {
-    const txt = await res.text();
-    throw new Error('Backend respondio ' + res.status + ': ' + txt);
+  // Slot vacio para agregar mas (si hay espacio)
+  if (iaImagenes.length < MAX_IMAGENES) {
+    const add = document.createElement('label');
+    add.className = 'ia-miniatura-add';
+    add.htmlFor = 'ia-input-imagen';
+    add.innerHTML = '<span>+</span><div>Agregar imagen</div>';
+    cont.appendChild(add);
   }
 
-  const data = await res.json();
-  if (!data.ok || !data.estructura) {
-    throw new Error(data.error || 'Respuesta invalida del backend');
+  // Contador
+  const contador = document.getElementById('ia-contador-imagenes');
+  if (contador) contador.textContent = `${iaImagenes.length}/${MAX_IMAGENES} imagenes`;
+}
+
+function iaActualizarBotonAnalizar() {
+  const btn = document.getElementById('ia-analizar-imagenes');
+  if (!btn) return;
+  if (iaImagenes.length === 0) {
+    btn.disabled = true;
+    btn.classList.add('btn-deshabilitado');
+  } else {
+    btn.disabled = false;
+    btn.classList.remove('btn-deshabilitado');
   }
-  return data.estructura;
 }
 
 // ============================================================
-//  APLICAR LA ESTRUCTURA RECONOCIDA AL EDITOR
-//  (usa el 'state' global del script.js principal)
+//  ANALIZAR — soporta single (canvas) o multi (imagenes)
+// ============================================================
+async function iaAnalizarMultiImagen() {
+  if (iaImagenes.length === 0) {
+    iaSetEstado('Agrega al menos una imagen', 'error');
+    return;
+  }
+  iaSetEstado(`Analizando ${iaImagenes.length} imagen(es) con IA...`, 'info');
+  iaMostrarSpinner(true);
+
+  try {
+    // Construir el array que espera el backend
+    const payload = {
+      imagenesBase64: iaImagenes.map(img => ({
+        data: img.base64,
+        mimeType: img.mimeType
+      }))
+    };
+
+    const res = await fetch(IA_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error('Backend respondio ' + res.status + ': ' + txt);
+    }
+
+    const data = await res.json();
+    if (!data.ok || !data.estructura) {
+      throw new Error(data.error || 'Respuesta invalida del backend');
+    }
+
+    iaMostrarSpinner(false);
+    iaMostrarResultado(data.estructura);
+  } catch (err) {
+    iaMostrarSpinner(false);
+    iaSetEstado('Error: ' + err.message, 'error');
+    console.error('[IA] Error multi:', err);
+  }
+}
+
+async function iaAnalizarDibujo() {
+  if (iaTrazos.length === 0) {
+    iaSetEstado('Dibuja una estructura primero', 'error');
+    return;
+  }
+  iaSetEstado('Analizando dibujo con IA...', 'info');
+  iaMostrarSpinner(true);
+
+  try {
+    const dataUrl = iaCanvas.toDataURL('image/png');
+    const base64 = dataUrl.split(',')[1];
+
+    const res = await fetch(IA_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imagenBase64: base64, mimeType: 'image/png' })
+    });
+
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error('Backend respondio ' + res.status + ': ' + txt);
+    }
+
+    const data = await res.json();
+    if (!data.ok || !data.estructura) {
+      throw new Error(data.error || 'Respuesta invalida del backend');
+    }
+
+    iaMostrarSpinner(false);
+    iaMostrarResultado(data.estructura);
+  } catch (err) {
+    iaMostrarSpinner(false);
+    iaSetEstado('Error: ' + err.message, 'error');
+    console.error('[IA] Error dibujo:', err);
+  }
+}
+
+// ============================================================
+//  APLICAR ESTRUCTURA AL EDITOR (igual que antes)
 // ============================================================
 function iaAplicarEstructura(est) {
-  // Validar y clampear valores
   state.nx = Math.max(2, Math.min(8, Math.round(est.nx || 3)));
   state.ny = Math.max(1, Math.min(10, Math.round(est.ny || 3)));
   state.nz = Math.max(1, Math.min(6, Math.round(est.nz || 1)));
@@ -168,17 +306,17 @@ function iaAplicarEstructura(est) {
   state.sy = Math.max(1, Math.min(6, est.sy || 3));
   state.sz = Math.max(1, Math.min(20, est.sz || 4));
 
-  // Regenerar estructura regular base
   state.elementosEliminados = [];
   state.apoyos = {};
+  state.diagonales = [];
+
   for (let mz = 0; mz < state.nz; mz++) {
     for (let ex = 0; ex < state.nx; ex++) {
       const nodoId = obtenerIdNodo(ex, 0, mz);
-      state.apoyos[nodoId] = 1;  // empotrado por defecto
+      state.apoyos[nodoId] = 1;
     }
   }
 
-  // Aplicar elementos faltantes detectados por la IA
   if (Array.isArray(est.elementosFaltantes)) {
     for (const ef of est.elementosFaltantes) {
       let tipo;
@@ -189,41 +327,31 @@ function iaAplicarEstructura(est) {
       const ex = ef.ejeX || 0;
       const ny = ef.nivelY || 0;
       const mz = ef.marcoZ || 0;
-      // Evitar duplicados
       if (!esEliminado(tipo, ex, ny, mz)) {
         state.elementosEliminados.push([tipo, ex, ny, mz]);
       }
     }
   }
 
-    // Aplicar diagonales detectadas por la IA
-  state.diagonales = [];
+  // Diagonales
   if (Array.isArray(est.diagonales)) {
     for (const d of est.diagonales) {
-      // Validar que los nodos esten dentro de la grilla
       const exA = Math.max(0, Math.min(state.nx - 1, d.ejeXA || 0));
       const nyA = Math.max(0, Math.min(state.ny, d.nivelYA || 0));
       const mzA = Math.max(0, Math.min(state.nz - 1, d.marcoZA || 0));
       const exB = Math.max(0, Math.min(state.nx - 1, d.ejeXB || 0));
       const nyB = Math.max(0, Math.min(state.ny, d.nivelYB || 0));
       const mzB = Math.max(0, Math.min(state.nz - 1, d.marcoZB || 0));
-
       const nodoA = obtenerIdNodo(exA, nyA, mzA);
       const nodoB = obtenerIdNodo(exB, nyB, mzB);
-
-      // Evitar diagonales degeneradas (mismo nodo) o duplicadas
       if (nodoA === nodoB) continue;
       const yaExiste = state.diagonales.some(diag =>
-        (diag[0] === nodoA && diag[1] === nodoB) ||
-        (diag[0] === nodoB && diag[1] === nodoA));
-      if (!yaExiste) {
-        state.diagonales.push([nodoA, nodoB]);
-      }
+        (diag[0] === nodoA && diag[1] === nodoB) || (diag[0] === nodoB && diag[1] === nodoA));
+      if (!yaExiste) state.diagonales.push([nodoA, nodoB]);
     }
   }
-   
 
-  // Sincronizar los inputs de la UI con los nuevos valores
+  // Sincronizar inputs
   document.getElementById('nx').value = state.nx;
   document.getElementById('ny').value = state.ny;
   document.getElementById('nz').value = state.nz;
@@ -231,34 +359,12 @@ function iaAplicarEstructura(est) {
   document.getElementById('sy').value = state.sy;
   document.getElementById('sz').value = state.sz;
 
-  // Redibujar la estructura 3D y actualizar
   redibujar();
   actualizarBytes();
 }
 
 // ============================================================
-//  FLUJO PRINCIPAL: procesar imagen (dibujo o subida)
-// ============================================================
-async function iaProcesarImagen(base64, mimeType) {
-  iaSetEstado('Analizando estructura con IA...', 'info');
-  iaMostrarSpinner(true);
-
-  try {
-    const est = await iaAnalizar(base64, mimeType);
-    iaMostrarSpinner(false);
-
-    // Mostrar panel de resultado con la confianza
-    iaMostrarResultado(est);
-
-  } catch (err) {
-    iaMostrarSpinner(false);
-    iaSetEstado('Error: ' + err.message, 'error');
-    console.error('[IA] Error:', err);
-  }
-}
-
-// ============================================================
-//  PANEL DE RESULTADO / VALIDACION
+//  PANEL DE RESULTADO
 // ============================================================
 let iaEstructuraPendiente = null;
 
@@ -272,13 +378,18 @@ function iaMostrarResultado(est) {
   if (conf < 50) colorConf = '#E24B4A';
   else if (conf < 75) colorConf = '#E4A33B';
 
+  const nDiag = (est.diagonales || []).length;
+  const nFalt = (est.elementosFaltantes || []).length;
+  const imgsUsadas = est._meta?.imagenesUsadas || 1;
+
   panel.innerHTML = `
-    <div style="font-weight:600; margin-bottom:8px; color:#e8e8ec;">La IA detectó:</div>
+    <div style="font-weight:600; margin-bottom:8px; color:#e8e8ec;">La IA detectó (${imgsUsadas} imagen${imgsUsadas>1?'es':''}):</div>
     <div style="font-size:13px; color:#a0a0aa; line-height:1.6;">
       Pisos: <b style="color:#e8e8ec;">${est.ny}</b> &nbsp;|&nbsp;
       Ejes X: <b style="color:#e8e8ec;">${est.nx}</b> &nbsp;|&nbsp;
       Marcos Z: <b style="color:#e8e8ec;">${est.nz}</b><br>
-      Elementos faltantes: <b style="color:#e8e8ec;">${(est.elementosFaltantes || []).length}</b><br>
+      Diagonales: <b style="color:#FF6B4A;">${nDiag}</b> &nbsp;|&nbsp;
+      Elementos faltantes: <b style="color:#e8e8ec;">${nFalt}</b><br>
       Confianza: <b style="color:${colorConf};">${conf}%</b>
     </div>
     <div style="font-size:12px; color:#6e6e7a; margin-top:8px; font-style:italic;">
@@ -288,7 +399,7 @@ function iaMostrarResultado(est) {
       <button class="btn-primario" onclick="iaAceptarResultado()" style="flex:1;">Aceptar y editar</button>
       <button class="btn-secundario" onclick="iaRechazarResultado()" style="flex:1;">Descartar</button>
     </div>
-    ${conf < 50 ? '<div style="font-size:11px; color:#E24B4A; margin-top:8px;">⚠ Confianza baja. Revisa bien la estructura o intenta con un dibujo más claro.</div>' : ''}
+    ${conf < 50 ? '<div style="font-size:11px; color:#E24B4A; margin-top:8px;">⚠ Confianza baja. Prueba agregar mas vistas o revisa bien la estructura.</div>' : ''}
   `;
   panel.style.display = 'block';
 }
@@ -296,16 +407,18 @@ function iaMostrarResultado(est) {
 function iaAceptarResultado() {
   if (!iaEstructuraPendiente) return;
   iaAplicarEstructura(iaEstructuraPendiente);
-  iaSetEstado('Estructura cargada. Ahora puedes editarla y generar el QR.', 'ok');
+  iaSetEstado('Estructura cargada. Puedes editarla y generar el QR.', 'ok');
   document.getElementById('ia-resultado').style.display = 'none';
   iaCerrarModal();
   iaEstructuraPendiente = null;
+  // Limpiar imagenes para no acumular en el modal
+  iaLimpiarImagenes();
 }
 
 function iaRechazarResultado() {
   iaEstructuraPendiente = null;
   document.getElementById('ia-resultado').style.display = 'none';
-  iaSetEstado('Resultado descartado. Puedes intentar de nuevo.', 'info');
+  iaSetEstado('Resultado descartado. Puedes intentar de nuevo o agregar mas imagenes.', 'info');
 }
 
 // ============================================================
@@ -326,9 +439,10 @@ function iaMostrarSpinner(mostrar) {
 
 function iaAbrirModal() {
   document.getElementById('ia-modal').style.display = 'flex';
-  // Inicializar canvas la primera vez
   if (!iaCanvas) iaInitCanvas();
   else iaLimpiarCanvas();
+  iaRenderizarMiniaturas();
+  iaActualizarBotonAnalizar();
 }
 
 function iaCerrarModal() {
@@ -336,56 +450,44 @@ function iaCerrarModal() {
 }
 
 // ============================================================
-//  CONECTAR EVENTOS (llamar despues de cargar el DOM)
+//  CONECTAR EVENTOS
 // ============================================================
 function iaBindEventos() {
-  // Boton para abrir el modal de IA
   const btnAbrir = document.getElementById('btnIA');
   if (btnAbrir) btnAbrir.addEventListener('click', iaAbrirModal);
 
-  // Cerrar modal
   const btnCerrar = document.getElementById('ia-cerrar');
   if (btnCerrar) btnCerrar.addEventListener('click', iaCerrarModal);
 
-  // Canvas: limpiar y deshacer
+  // Canvas
   const btnLimpiar = document.getElementById('ia-limpiar');
   if (btnLimpiar) btnLimpiar.addEventListener('click', () => iaLimpiarCanvas());
   const btnDeshacer = document.getElementById('ia-deshacer');
   if (btnDeshacer) btnDeshacer.addEventListener('click', iaDeshacer);
 
-  // Analizar el dibujo del canvas
+  // Analizar dibujo (canvas)
   const btnAnalizarDibujo = document.getElementById('ia-analizar-dibujo');
-  if (btnAnalizarDibujo) btnAnalizarDibujo.addEventListener('click', () => {
-    if (iaTrazos.length === 0) {
-      iaSetEstado('Dibuja una estructura primero', 'error');
-      return;
-    }
-    // Convertir canvas a base64
-    const dataUrl = iaCanvas.toDataURL('image/png');
-    const base64 = dataUrl.split(',')[1];
-    iaProcesarImagen(base64, 'image/png');
-  });
+  if (btnAnalizarDibujo) btnAnalizarDibujo.addEventListener('click', iaAnalizarDibujo);
 
-  // Subir imagen
+  // Subir imagenes (multiple)
   const inputImg = document.getElementById('ia-input-imagen');
-  if (inputImg) inputImg.addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    try {
-      const { base64, mime } = await iaCargarImagen(file);
-      // Mostrar preview
-      const prev = document.getElementById('ia-preview');
-      if (prev) {
-        prev.src = 'data:' + mime + ';base64,' + base64;
-        prev.style.display = 'block';
-      }
-      iaProcesarImagen(base64, mime);
-    } catch (err) {
-      iaSetEstado('Error al cargar imagen: ' + err.message, 'error');
-    }
-  });
+  if (inputImg) {
+    inputImg.addEventListener('change', async (e) => {
+      await iaAgregarImagenes(e.target.files);
+      // Limpiar el input para poder volver a seleccionar la misma imagen si quiere
+      e.target.value = '';
+    });
+  }
 
-  // Tabs dibujo / imagen
+  // Analizar imagenes (multi)
+  const btnAnalizarImg = document.getElementById('ia-analizar-imagenes');
+  if (btnAnalizarImg) btnAnalizarImg.addEventListener('click', iaAnalizarMultiImagen);
+
+  // Limpiar todas las imagenes
+  const btnLimpiarImg = document.getElementById('ia-limpiar-imagenes');
+  if (btnLimpiarImg) btnLimpiarImg.addEventListener('click', iaLimpiarImagenes);
+
+  // Tabs
   document.querySelectorAll('.ia-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.ia-tab').forEach(t => t.classList.remove('activo'));
@@ -397,7 +499,4 @@ function iaBindEventos() {
   });
 }
 
-// Auto-inicializar cuando carga el DOM
-window.addEventListener('DOMContentLoaded', () => {
-  iaBindEventos();
-});
+window.addEventListener('DOMContentLoaded', () => { iaBindEventos(); });
