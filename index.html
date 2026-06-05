@@ -250,14 +250,31 @@ if (typeof QRious === 'undefined') {
       </div>
     </div>
  
-    <!-- Panel: Subir imagen -->
+    <!-- Panel: Subir imagenes (multi) -->
     <div id="ia-panel-imagen" class="ia-panel" style="display:none;">
-      <p class="ia-hint">Sube una foto de un boceto, esquema estructural o maqueta. La IA intentará reconocer la estructura.</p>
-      <label class="ia-upload-zone">
-        <input type="file" id="ia-input-imagen" accept="image/*" hidden>
-        <span> Haz clic para seleccionar una imagen</span>
-      </label>
-      <img id="ia-preview" class="ia-preview" style="display:none;" alt="Vista previa">
+      <p class="ia-hint">
+        Sube hasta 4 imagenes de la misma estructura desde diferentes angulos
+        (frontal, lateral, planta, perspectiva). Mas vistas = mejor reconocimiento.
+      </p>
+ 
+      <!-- Input oculto para abrir el selector multiple -->
+      <input type="file" id="ia-input-imagen" accept="image/*" multiple hidden>
+ 
+      <!-- Contenedor de miniaturas -->
+      <div id="ia-miniaturas" class="ia-miniaturas-grid"></div>
+ 
+      <!-- Contador + acciones -->
+      <div class="ia-imgs-actions">
+        <span id="ia-contador-imagenes" class="ia-contador">0/4 imagenes</span>
+        <button class="btn-secundario btn-pequeno" id="ia-limpiar-imagenes" type="button">
+          Limpiar todo
+        </button>
+      </div>
+ 
+      <!-- Boton principal -->
+      <button class="btn-primario btn-deshabilitado" id="ia-analizar-imagenes" disabled type="button">
+        Analizar imagenes
+      </button>
     </div>
  
     <!-- Spinner -->
